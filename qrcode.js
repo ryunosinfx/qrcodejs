@@ -94,10 +94,11 @@ class QRCodeModel {
 	}
 	makeImpl(test, maskPattern) {
 		const moduleCount = this.typeNumber * 4 + 17;
+		const moduleCountOffsetMinus7 = moduleCount - 7;
 		this.moduleCount = moduleCount;
 		const modules = new Array(moduleCount);
 		this.modules = modules;
-		for (let rowIndex = 0; rowIndex < this.moduleCount; rowIndex++) {
+		for (let rowIndex = 0; rowIndex < moduleCount; rowIndex++) {
 			const row = new Array(moduleCount);
 			modules[rowIndex] = row;
 			for (let colIndex = 0; colIndex < moduleCount; colIndex++) {
@@ -105,8 +106,8 @@ class QRCodeModel {
 			}
 		}
 		this.setupPositionProbePattern(0, 0);
-		this.setupPositionProbePattern(this.moduleCount - 7, 0);
-		this.setupPositionProbePattern(0, this.moduleCount - 7);
+		this.setupPositionProbePattern(moduleCountOffsetMinus7, 0);
+		this.setupPositionProbePattern(0, moduleCountOffsetMinus7);
 		this.setupPositionAdjustPattern();
 		this.setupTimingPattern();
 		this.setupTypeInfo(test, maskPattern);
@@ -191,8 +192,10 @@ class QRCodeModel {
 					continue;
 				}
 				for (let r = -2; r <= 2; r++) {
+					const rIndex = rowIndex + r;
+					const row = this.modules[rIndex];
 					for (let c = -2; c <= 2; c++) {
-						this.modules[row + r][col + c] = r === -2 || r === 2 || c === -2 || c === 2 || (r === 0 && c === 0);
+						row[colIndex + c] = r === -2 || r === 2 || c === -2 || c === 2 || (r === 0 && c === 0);
 					}
 				}
 			}
@@ -297,15 +300,17 @@ class QRCodeModel {
 		if (bitLength + 4 <= totalDataBitCount) {
 			buffer.put(0, 4);
 		}
-		while (bitLength % 8 !== 0) {
+		while (buffer.getLengthInBits() % 8 !== 0) {
 			buffer.putBit(false);
 		}
 		while (true) {
-			if (bitLength >= totalDataBitCount) {
+			const bitLength1 = buffer.getLengthInBits();
+			if (bitLength1 >= totalDataBitCount) {
 				break;
 			}
 			buffer.put(PAD0, 8);
-			if (bitLength >= totalDataBitCount) {
+			const bitLength2 = buffer.getLengthInBits();
+			if (bitLength2 >= totalDataBitCount) {
 				break;
 			}
 			buffer.put(PAD1, 8);
@@ -338,7 +343,7 @@ class QRCodeModel {
 			const rawPoly = new QRPolynomial(dcdataRow, colLen);
 			const modPoly = rawPoly.mod(rsPoly);
 			const modLen = modPoly.getLength();
-			const offset = modLen - colLen;
+			offset = modLen - colLen;
 			const ecdataRow = new Array(colLen);
 			for (let i = 0; i < colLen; i++) {
 				const modIndex = i + offset;
@@ -517,22 +522,25 @@ const QRUtil = {
 	getLostPoint(qrCode) {
 		const moduleCount = qrCode.getModuleCount();
 		let lostPoint = 0;
+		let darkCount = 0;
 		for (let row = 0; row < moduleCount; row++) {
 			for (let col = 0; col < moduleCount; col++) {
 				let sameCount = 0;
-				const dark = qrCode.isDark(row, col);
+				const isDark = qrCode.isDark(row, col);
 				for (let r = -1; r <= 1; r++) {
-					if (row + r < 0 || moduleCount <= row + r) {
+					const rowR = row + r;
+					if (rowR < 0 || moduleCount <= rowR) {
 						continue;
 					}
 					for (let c = -1; c <= 1; c++) {
-						if (col + c < 0 || moduleCount <= col + c) {
+						const colC = col + c;
+						if (colC < 0 || moduleCount <= colC) {
 							continue;
 						}
 						if (r === 0 && c === 0) {
 							continue;
 						}
-						if (dark === qrCode.isDark(row + r, col + c)) {
+						if (isDark === qrCode.isDark(rowR, colC)) {
 							sameCount++;
 						}
 					}
@@ -540,15 +548,20 @@ const QRUtil = {
 				if (sameCount > 5) {
 					lostPoint += 3 + sameCount - 5;
 				}
+				if (qrCode.isDark(row, col)) {
+					darkCount++;
+				}
 			}
 		}
 		for (let row = 0; row < moduleCount - 1; row++) {
+			const row1 = row + 1;
 			for (let col = 0; col < moduleCount - 1; col++) {
 				let count = 0;
+				const col1 = col + 1;
 				if (qrCode.isDark(row, col)) count++;
-				if (qrCode.isDark(row + 1, col)) count++;
-				if (qrCode.isDark(row, col + 1)) count++;
-				if (qrCode.isDark(row + 1, col + 1)) count++;
+				if (qrCode.isDark(row1, col)) count++;
+				if (qrCode.isDark(row, col1)) count++;
+				if (qrCode.isDark(row1, col1)) count++;
 				if (count === 0 || count === 4) {
 					lostPoint += 3;
 				}
@@ -581,14 +594,6 @@ const QRUtil = {
 					qrCode.isDark(row + 6, col)
 				) {
 					lostPoint += 40;
-				}
-			}
-		}
-		let darkCount = 0;
-		for (let col = 0; col < moduleCount; col++) {
-			for (let row = 0; row < moduleCount; row++) {
-				if (qrCode.isDark(row, col)) {
-					darkCount++;
 				}
 			}
 		}
@@ -976,8 +981,8 @@ class SvgDrawer {
 		elm.appendChild(svg);
 		svg.appendChild(this.makeSVG('rect', { fill: htmlOption.colorLight, width: '100%', height: '100%' }));
 		svg.appendChild(this.makeSVG('rect', { fill: htmlOption.colorDark, width: '1', height: '1', id: 'template' }));
-		for (const rowIndex = 0; rowIndex < nCount; rowIndex++) {
-			for (const colIndex = 0; colIndex < nCount; colIndex++) {
+		for (let rowIndex = 0; rowIndex < nCount; rowIndex++) {
+			for (let colIndex = 0; colIndex < nCount; colIndex++) {
 				if (qrCodeData.isDark(rowIndex, colIndex)) {
 					const child = this.makeSVG('use', { x: colIndex + '', y: rowIndex + '' });
 					child.setAttributeNS('http://www.w3.org/1999/xlink', 'href', '#template');
@@ -1020,9 +1025,9 @@ class HtmlDrawer {
 		const tElm = document.createElement('table');
 		tElm.style.borderWidth = 0;
 		tElm.style.borderCollapse = 'collapse';
-		for (const row = 0; row < nCount; row++) {
+		for (let row = 0; row < nCount; row++) {
 			const trElm = document.createElement('tr');
-			for (const col = 0; col < nCount; col++) {
+			for (let col = 0; col < nCount; col++) {
 				const color = qrCodeData.isDark(row, col) ? htmlOption.colorDark : htmlOption.colorLight;
 				const tdElm = document.createElement('td');
 				tdElm.style.borderWidth = 0;
@@ -1093,8 +1098,8 @@ class CanvasDrawer {
 		const nRoundedHeight = Math.round(nHeight);
 		imgElm.style.display = 'none';
 		this.clear();
-		for (const rowIndex = 0; rowIndex < nCount; rowIndex++) {
-			for (const colIndex = 0; colIndex < nCount; colIndex++) {
+		for (let rowIndex = 0; rowIndex < nCount; rowIndex++) {
+			for (let colIndex = 0; colIndex < nCount; colIndex++) {
 				const isDark = qrCodeData.isDark(rowIndex, colIndex);
 				const nLeft = colIndex * nWidth;
 				const nTop = rowIndex * nHeight;
@@ -1115,7 +1120,7 @@ class CanvasDrawer {
 	 */
 	clear() {
 		this.ctx.clearRect(0, 0, this.canvasElm.width, this.canvasElm.height);
-		imgElm.style.display = 'none';
+		this.imgElm.style.display = 'none';
 	}
 }
 /**
