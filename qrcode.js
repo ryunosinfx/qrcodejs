@@ -123,14 +123,16 @@ class QRCodeModel {
 		const moduleCount = this.moduleCount;
 		const models = this.modules;
 		for (let r = -1; r <= 7; r++) {
-			if (row + r <= -1 || moduleCount <= row + r) {
+			const rowR = row + r;
+			if (rowR <= -1 || moduleCount <= rowR) {
 				continue;
 			}
 			for (let c = -1; c <= 7; c++) {
-				if (col + c <= -1 || moduleCount <= col + c) {
+				const colC = col + c;
+				if (colC <= -1 || moduleCount <= colC) {
 					continue;
 				}
-				models[row + r][col + c] = (0 <= r && r <= 6 && (c === 0 || c === 6)) || (0 <= c && c <= 6 && (r === 0 || r === 6)) || (2 <= r && r <= 4 && 2 <= c && c <= 4);
+				models[rowR][colC] = !!(0 <= r && r <= 6 && (c === 0 || c === 6)) || (0 <= c && c <= 6 && (r === 0 || r === 6)) || (2 <= r && r <= 4 && 2 <= c && c <= 4);
 			}
 		}
 	}
@@ -184,18 +186,18 @@ class QRCodeModel {
 	setupPositionAdjustPattern() {
 		const pos = QRUtil.getPatternPosition(this.typeNumber);
 		const pl = pos.length;
+		const modules = this.modules;
 		for (let i = 0; i < pl; i++) {
 			for (let j = 0; j < pl; j++) {
 				const rowIndex = pos[i];
 				const colIndex = pos[j];
-				if (this.modules[rowIndex][colIndex] != null) {
+				if (modules[rowIndex][colIndex] != null) {
 					continue;
 				}
 				for (let r = -2; r <= 2; r++) {
-					const rIndex = rowIndex + r;
-					const row = this.modules[rIndex];
+					const row = modules[rowIndex + r];
 					for (let c = -2; c <= 2; c++) {
-						row[colIndex + c] = r === -2 || r === 2 || c === -2 || c === 2 || (r === 0 && c === 0);
+						row[colIndex + c] = !!(r === -2 || r === 2 || c === -2 || c === 2 || (r === 0 && c === 0));
 					}
 				}
 			}
@@ -304,13 +306,11 @@ class QRCodeModel {
 			buffer.putBit(false);
 		}
 		while (true) {
-			const bitLength1 = buffer.getLengthInBits();
-			if (bitLength1 >= totalDataBitCount) {
+			if (buffer.getLengthInBits() >= totalDataBitCount) {
 				break;
 			}
 			buffer.put(PAD0, 8);
-			const bitLength2 = buffer.getLengthInBits();
-			if (bitLength2 >= totalDataBitCount) {
+			if (buffer.getLengthInBits() >= totalDataBitCount) {
 				break;
 			}
 			buffer.put(PAD1, 8);
@@ -339,14 +339,14 @@ class QRCodeModel {
 			dcdata[r] = dcdataRow;
 			offset += dcCount;
 			const rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
-			const colLen = rsPoly.getLength() - 1;
-			const rawPoly = new QRPolynomial(dcdataRow, colLen);
+			const ecLen = rsPoly.getLength() - 1;
+			const rawPoly = new QRPolynomial(dcdataRow, ecLen);
 			const modPoly = rawPoly.mod(rsPoly);
 			const modLen = modPoly.getLength();
-			offset = modLen - colLen;
-			const ecdataRow = new Array(colLen);
-			for (let i = 0; i < colLen; i++) {
-				const modIndex = i + offset;
+			const offsetLen = modLen - ecLen;
+			const ecdataRow = new Array(ecLen);
+			for (let i = 0; i < ecLen; i++) {
+				const modIndex = i + offsetLen;
 				ecdataRow[i] = modIndex >= 0 ? modPoly.get(modIndex) : 0;
 			}
 			ecdata[r] = ecdataRow;
@@ -354,18 +354,20 @@ class QRCodeModel {
 		}
 		const data = new Array(totalCodeCount);
 		let index = 0;
-		for (let r = 0; r < len; r++) {
-			const dcdataRow = dcdata[r];
-			const dcdataRowLen = dcdataRow.length;
-			for (let i = 0; i < maxDcCount && i < dcdataRowLen; i++) {
-				data[index++] = dcdataRow[i];
+		for (let i = 0; i < maxDcCount; i++) {
+			for (let r = 0; r < len; r++) {
+				const dcdataRow = dcdata[r];
+				if (i < dcdataRow.length) {
+					data[index++] = dcdataRow[i];
+				}
 			}
 		}
-		for (let r = 0; r < len; r++) {
-			const ecdataRow = ecdata[r];
-			const ecdataRowLen = ecdataRow.length;
-			for (let i = 0; i < maxEcCount && i < ecdataRowLen; i++) {
-				data[index++] = ecdataRow[i];
+		for (let i = 0; i < maxEcCount; i++) {
+			for (let r = 0; r < len; r++) {
+				const ecdataRow = ecdata[r];
+				if (i < ecdataRow.length) {
+					data[index++] = ecdataRow[i];
+				}
 			}
 		}
 		return data;
@@ -522,7 +524,6 @@ const QRUtil = {
 	getLostPoint(qrCode) {
 		const moduleCount = qrCode.getModuleCount();
 		let lostPoint = 0;
-		let darkCount = 0;
 		for (let row = 0; row < moduleCount; row++) {
 			for (let col = 0; col < moduleCount; col++) {
 				let sameCount = 0;
@@ -547,9 +548,6 @@ const QRUtil = {
 				}
 				if (sameCount > 5) {
 					lostPoint += 3 + sameCount - 5;
-				}
-				if (qrCode.isDark(row, col)) {
-					darkCount++;
 				}
 			}
 		}
@@ -594,6 +592,14 @@ const QRUtil = {
 					qrCode.isDark(row + 6, col)
 				) {
 					lostPoint += 40;
+				}
+			}
+		}
+		let darkCount = 0;
+		for (let col = 0; col < moduleCount; col++) {
+			for (let row = 0; row < moduleCount; row++) {
+				if (qrCode.isDark(row, col)) {
+					darkCount++;
 				}
 			}
 		}
