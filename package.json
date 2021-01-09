@@ -1,7 +1,7 @@
 {
-  "name": "qrcodejs",
-  "version": "1.0.0",
-  "description": "QRCode.js is javascript library for making QRCode",
+  "name": "qrcodejs_es_module",
+  "version": "1.0.1",
+  "description": "QRCode.js_es_module is es module javascript library for making QRCode",
   "main": "qrcode.js",
   "scripts": {
     "start": "webpack-dev-server --hot --inline --watch-content-base --content-base ./ --open-page index.html ",
@@ -14,7 +14,7 @@
   "keywords": [
     "qrcode"
   ],
-  "author": "",
+  "author": "ryunosinfx",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/ryunosinfx/qrcodejs/issues"
