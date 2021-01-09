@@ -1,0 +1,29 @@
+{
+  "name": "qrcodejs",
+  "version": "1.0.0",
+  "description": "QRCode.js is javascript library for making QRCode",
+  "main": "qrcode.js",
+  "scripts": {
+    "start": "webpack-dev-server --hot --inline --watch-content-base --content-base ./ --open-page index.html ",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ryunosinfx/qrcodejs.git"
+  },
+  "keywords": [
+    "qrcode"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ryunosinfx/qrcodejs/issues"
+  },
+  "homepage": "https://github.com/ryunosinfx/qrcodejs#readme",
+  "devDependencies": {
+    "webpack": "^5.12.2",
+    "webpack-cli": "^3.3.12",
+    "webpack-dev-server": "^3.11.1",
+    "webpack-server": "^0.1.2"
+  }
+}
