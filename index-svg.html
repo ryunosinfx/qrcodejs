@@ -1,47 +1,97 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ko" lang="ko">
-  <head>
-    <title>Cross-Browser QRCode generator for Javascript</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
-    <script type="text/javascript" src="jquery.min.js"></script>
-    <script type="text/javascript" src="qrcode.js"></script>
-  </head>
-  <body>
-  <input id="text" type="text" value="http://jindo.dev.naver.com/collie" style="width:80%" />
-  <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-    <g id="qrcode"/>
-  </svg>
-  <script type="text/javascript">
-  var qrcode = new QRCode(document.getElementById("qrcode"), {
-      width : 100,
-      height : 100,
-      useSVG: true
-  });
 
-  function makeCode () {		
-      var elText = document.getElementById("text");
+<head>
+  <title>Cross-Browser QRCode generator for Javascript</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+  <script type="module" src="qrcode.js"></script>
+</head>
 
-      if (!elText.value) {
-          alert("Input a text");
-          elText.focus();
-          return;
+<body>
+  <div>
+    <h1>qrcode maker</h1>
+    <div>
+      <div>
+        text data:
+        <input id="text" type="text" value="http://jindo.dev.naver.com/collie" style="width:80%" />
+        <span id=textSize></span>
+      </div>
+      <div>
+        size
+        width:<input id="width" type="number" value="256" style="width:10%" />px /
+        height:<input id="height" type="number" value="256" style="width:10%" />px
+      </div>
+      <div>
+        color dark:
+        <input id="dark" type="text" value="#000000" style="width:10%" />/light:
+        <input id="light" type="text" value="#ffffff" style="width:10%" />
+      </div>
+      <div>
+        Correct Level:
+        <select id="correctLevel">
+          <option value="L">L</option>
+          <option value="M">M</option>
+          <option value="Q">Q</option>
+          <option value="H" selected="selected">H</option>
+        </select>
+      </div>
+    </div>
+    <div id="qrcode" style="width:100px; height:100px; margin-top:15px;"></div>
+    <a id="dlLinkAncker" style="visibility: hidden;"></a>
+  </div>
+
+  <script type="module">
+    import { SvgQRCode } from "./qrcode.js"
+    const textElm = document.getElementById("text");
+    textElm.value = location.href;
+    const textSizeElm = document.getElementById("textSize");
+    const qrcodeElm = document.getElementById("qrcode");
+    const widthElm = document.getElementById("width");
+    const heightElm = document.getElementById("height");
+    const darkElm = document.getElementById("dark");
+    const lightlm = document.getElementById("light");
+    const correctLevelElm = document.getElementById("correctLevel");
+    const qrcode = new SvgQRCode(qrcodeElm);
+    const data = { svg: null };
+    const dl = (event) => {
+      const svgElm = data.svg;
+      const svgData = new XMLSerializer().serializeToString(svgElm);
+      const d = document.getElementById("dlLinkAncker");
+      const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+      d.download = "qrcode_" + correctLevelElm.value + "_W" + widthElm.value + "xH" + heightElm.value + "_" + Date.now() + ".svg";
+      d.href = URL.createObjectURL(new Blob([bom, svgData], { type: "image/svg+xml" }));;
+      d.click();
+      setTimeout(() => {
+        URL.revokeObjectURL(d.href);
+      }, 1000);
+    }
+    const makeCode = () => {
+      if (!textElm.value) {
+        alert("Input a text");
+        textElm.focus();
+        return;
       }
+      const content = textElm.value;
+      qrcode.setSize(widthElm.value, heightElm.value);
+      qrcode.setColor(darkElm.value, lightlm.value);
+      console.log(correctLevelElm.value)
+      qrcode.setCorrectLevel(correctLevelElm.value);
+      qrcode.makeCode(content);
+      textSizeElm.textContent = content.length + "chars"
+      const svgElm = qrcodeElm.querySelector("div>svg");
+      data.svg = svgElm;
+      svgElm.removeEventListener("click", dl);
+      svgElm.addEventListener("click", dl);
+    }
 
-      qrcode.makeCode(elText.value);
-  }
-
-  makeCode();
-
-  $("#text").
-      on("blur", function () {
-          makeCode();
-      }).
-      on("keydown", function (e) {
-          if (e.keyCode == 13) {
-              makeCode();
-          }
-      });
-    </script>
-  </body>
-</html>
+    makeCode();
+    textElm.addEventListener("input", makeCode);
+    widthElm.addEventListener("input", makeCode);
+    heightElm.addEventListener("input", makeCode);
+    darkElm.addEventListener("input", makeCode);
+    lightlm.addEventListener("input", makeCode);
+    correctLevelElm.addEventListener("change", makeCode);
+  </script>
+</body>

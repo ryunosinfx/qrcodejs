@@ -978,6 +978,8 @@ class SvgDrawer {
 		const htmlOption = this.htmlOption;
 		const elm = this.elm;
 		const nCount = qrCodeData.getModuleCount();
+		elm.style.width = htmlOption.width + 'px';
+		elm.style.height = htmlOption.height + 'px';
 		const nWidth = Math.floor(htmlOption.width / nCount);
 		const nHeight = Math.floor(htmlOption.height / nCount);
 		this.clear();
@@ -1094,9 +1096,11 @@ class CanvasDrawer {
 	 * @param {QRCode} qrCodeData
 	 */
 	draw(qrCodeData) {
+		const htmlOption = this.htmlOption;
+		this.canvasElm.width = htmlOption.width;
+		this.canvasElm.height = htmlOption.height;
 		const imgElm = this.imgElm;
 		const ctx = this.ctx;
-		const htmlOption = this.htmlOption;
 		const nCount = qrCodeData.getModuleCount();
 		const nWidth = htmlOption.width / nCount;
 		const nHeight = htmlOption.height / nCount;
@@ -1154,7 +1158,7 @@ class CanvasDrawer {
  * @param {String} [vOption.colorLight="#ffffff"]
  * @param {QRErrorCorrectLevel} [vOption.correctLevel=QRErrorCorrectLevel.H] [L|M|Q|H]
  */
-class QRCode {
+export class QRCode {
 	constructor(elm, vOption = {}) {
 		this.htmlOption = {
 			width: 256,
@@ -1175,7 +1179,7 @@ class QRCode {
 			}
 		}
 		const elment = typeof elm === 'string' ? document.getElementById(elm) : elm;
-		const DrawingClass = this.htmlOption.useSVG ? svgDrawer : this.htmlOption.useHtml ? HtmlDrawer : CanvasDrawer;
+		const DrawingClass = this.htmlOption.useSVG ? SvgDrawer : this.htmlOption.useHtml ? HtmlDrawer : CanvasDrawer;
 		this.elm = elment;
 		this.drawer = new DrawingClass(elment, this.htmlOption);
 		if (this.htmlOption.text) {
@@ -1255,23 +1259,60 @@ class QRCode {
 		}
 	}
 	/**
+	 * reset size of the QRCode
+	 * @param {Number} [vOption.width=256]
+	 * @param {Number} [vOption.height=256]
+	 */
+	setSize(width = 256, height = 256) {
+		this.htmlOption.width = width;
+		this.htmlOption.height = height;
+	}
+	/**
+	 * reset color of the QRCode
+	 * @param {String} [vOption.colorDark="#000000"]
+	 * @param {String} [vOption.colorLight="#ffffff"]
+	 */
+	setColor(colorDark = '#000000', colorLight = '#ffffff') {
+		this.htmlOption.colorDark = colorDark;
+		this.htmlOption.colorLight = colorLight;
+	}
+	/**
+	 * reset recorrectLeve of the QRCode
+	 * @param {QRErrorCorrectLevel} [vOption.correctLevel=QRErrorCorrectLevel.H] [L|M|Q|H]
+	 */
+	setCorrectLevel(correctLevel = QRErrorCorrectLevel.H) {
+		if (typeof correctLevel === 'string') {
+			if (correctLevel === 'H') {
+				this.htmlOption.correctLevel = QRErrorCorrectLevel.H;
+			} else if (correctLevel === 'Q') {
+				this.htmlOption.correctLevel = QRErrorCorrectLevel.Q;
+			} else if (correctLevel === 'M') {
+				this.htmlOption.correctLevel = QRErrorCorrectLevel.M;
+			} else if (correctLevel === 'L') {
+				this.htmlOption.correctLevel = QRErrorCorrectLevel.L;
+			}
+		} else {
+			this.htmlOption.correctLevel = correctLevel;
+		}
+	}
+	/**
 	 * Clear the QRCode
 	 */
 	clear() {
 		this.drawer.clear();
 	}
 }
-class HtmlQRCode extends QRCode {
+export class HtmlQRCode extends QRCode {
 	constructor(elm, text = 'HtmlQRCode', width = 256, height = 256, colorDark = '#000000', colorLight = '#ffffff', correctLevel = QRErrorCorrectLevel.H) {
 		super(elm, { text, width, height, colorDark, colorLight, correctLevel, useHtml: true });
 	}
 }
-class SvgQRCode extends QRCode {
+export class SvgQRCode extends QRCode {
 	constructor(elm, text = 'SvgQRCode', width = 256, height = 256, colorDark = '#000000', colorLight = '#ffffff', correctLevel = QRErrorCorrectLevel.H) {
 		super(elm, { text, width, height, colorDark, colorLight, correctLevel, useSVG: true });
 	}
 }
-class CanvasQRCode extends QRCode {
+export class CanvasQRCode extends QRCode {
 	constructor(elm, text = 'CanvasQRCode', width = 256, height = 256, colorDark = '#000000', colorLight = '#ffffff', correctLevel = QRErrorCorrectLevel.H) {
 		super(elm, { text, width, height, colorDark, colorLight, correctLevel });
 	}

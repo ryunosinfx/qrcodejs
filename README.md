@@ -3,26 +3,28 @@ QRCode.js is javascript library for making QRCode. QRCode.js supports Cross-brow
 QRCode.js has no dependencies.
 
 ## Basic Usages
-```
+```EJS
 <div id="qrcode"></div>
-<script type="text/javascript">
-new QRCode(document.getElementById("qrcode"), "http://jindo.dev.naver.com/collie");
+<script type="module">
+		import { QRCode } from "./qrcode.js"
+		new QRCode(document.getElementById("qrcode"), "http://jindo.dev.naver.com/collie");
 </script>
 ```
 
 or with some options
 
-```
+```EJS
 <div id="qrcode"></div>
-<script type="text/javascript">
-var qrcode = new QRCode(document.getElementById("qrcode"), {
-	text: "http://jindo.dev.naver.com/collie",
-	width: 128,
-	height: 128,
-	colorDark : "#000000",
-	colorLight : "#ffffff",
-	correctLevel : QRCode.CorrectLevel.H
-});
+<script type="module">
+		import { QRCode } from "./qrcode.js"
+		const qrcode = new QRCode(document.getElementById("qrcode"), {
+			text: "http://jindo.dev.naver.com/collie",
+			width: 128,
+			height: 128,
+			colorDark : "#000000",
+			colorLight : "#ffffff",
+			correctLevel : QRCode.CorrectLevel.H
+		});
 </script>
 ```
 
@@ -34,7 +36,9 @@ qrcode.makeCode("http://naver.com"); // make another code.
 ```
 
 ## Browser Compatibility
-IE6~10, Chrome, Firefox, Safari, Opera, Mobile Safari, Android, Windows Mobile, ETC.
+~~IE6~10,~~ Chrome, Firefox, Safari, Opera, Mobile Safari, Android, ~~Windows Mobile,~~ ETC.
+
+It is ES module version.
 
 ## License
 MIT License
@@ -44,3 +48,4 @@ twitter @davidshimjs
 
 [![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/davidshimjs/qrcodejs/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
 
+Modified by ryunosinfx
